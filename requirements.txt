@@ -1,0 +1,9 @@
+# python==3.12.0
+cffi @ file:///C:/b/abs_924gv1kxzj/croot/cffi_1700254355075/work
+click @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/click_1699473800648/work
+colorama @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/colorama_1699472650914/work
+cryptography @ file:///C:/b/abs_e8cnom_zw_/croot/cryptography_1702071486468/work
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+python-dotenv @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/python-dotenv_1699475097728/work
+setuptools==68.2.2
+wheel==0.41.2
