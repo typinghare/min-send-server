@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 # Load environment variables
 if os.path.exists(".env"):
@@ -46,20 +47,28 @@ def perform_ecdh_key_exchange(conn):
     # Perform ECDH key exchange
     shared_key = client_private_key.exchange(ec.ECDH(), server_public_key)
 
-    # You can use shared_key as a symmetric key for encryption, e.g., using a KDF.
+    # Use the shared key for encryption
+    cipher = Cipher(
+        algorithms.AES(shared_key),
+        modes.CFB(b"\0" * 16),
+        backend=default_backend(),
+    )
+    encryptor = cipher.encryptor()
+    decryptor = cipher.decryptor()
 
-    return shared_key
+    return encryptor, decryptor
 
 
 def main():
     """Main function."""
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(ADDR)
-    shared_key = perform_ecdh_key_exchange(client)
-    print(f"[SERVER]: {shared_key}")
+    encryptor, decryptor = perform_ecdh_key_exchange(client)
+    # print(f"[SERVER]: {shared_key}")
 
     while True:
-        data = client.recv(SIZE).decode(FORMAT)
+        data = client.recv(SIZE)
+        data = decryptor.update(data).decode(FORMAT)
         cmd, msg = data.split("@")
 
         if cmd == "DISCONNECTED":
@@ -73,25 +82,37 @@ def main():
         cmd = data[0]
 
         if cmd == "HELP":
-            client.send(cmd.encode(FORMAT))
+            encrypted_cmd = encryptor.update(cmd.encode(FORMAT))
+            client.send(encrypted_cmd)
         elif cmd == "LOGOUT":
-            client.send(cmd.encode(FORMAT))
+            encrypted_cmd = encryptor.update(cmd.encode(FORMAT))
+            client.send(encrypted_cmd)
             break
         elif cmd == "LIST":
-            client.send(cmd.encode(FORMAT))
+            encrypted_cmd = encryptor.update(cmd.encode(FORMAT))
+            client.send(encrypted_cmd)
         elif cmd == "DELETE":
-            client.send(f"{cmd}@{data[1]}".encode(FORMAT))
+            cmd = f"{cmd}@{data[1]}"
+            encrypted_cmd = encryptor.update(cmd.encode(FORMAT))
+            client.send(encrypted_cmd)
         elif cmd == "UPLOAD":
             filepath = data[1]
 
+            # Get the filename and filesize
             filename = os.path.basename(filepath)
             filesize = os.path.getsize(filepath)
 
-            client.send(f"UPLOAD@{filename}@{filesize}".encode(FORMAT))
+            # Create the command
+            cmd = f"{cmd}@{filename}@{filesize}"
+            # Encrypt the command
+            encrypted_command = encryptor.update(cmd.encode(FORMAT))
+            # Send the command
+            client.send(encrypted_command)
 
             with open(filepath, "rb") as f:
                 for chunk in iter(lambda: f.read(SIZE), b""):
-                    client.send(chunk)
+                    encrypted_chunk = encryptor.update(chunk)
+                    client.send(encrypted_chunk)
 
     print("Disconnected from the server.")
     client.close()
