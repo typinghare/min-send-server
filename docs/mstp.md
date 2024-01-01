@@ -22,3 +22,5 @@ time=1703847211
 type=file
 file-name=test.txt
 ~~~
+
+Data is the main string to be transmitted. To transmit binary data, encode the original data with base64 before adding it to the message.

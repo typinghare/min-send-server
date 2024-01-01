@@ -61,6 +61,9 @@ class User:
         for client in self.client_set - {sender}:
             client.send(transmittable)
 
+    def __repr__(self):
+        return f"User[username={self.username}; pin={self.pin}]"
+
 
 class UserManager:
     """
@@ -88,7 +91,7 @@ class UserManager:
         Registers a user.
         :param username: The username of the user to register.
         :param pin: The pin of the user to register.
-        :return: The registered user instance.
+        :return: The registered user object.
         """
         user = User(self, username, pin)
         self.by_username[username] = user
